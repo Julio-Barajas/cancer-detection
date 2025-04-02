@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cancer Detection</title>
 </head>
 <body>
   <h1>Cancer Detection Form</h1>
 
-  <form id="predictForm">
+  <form id="cancer-form">
     <div id="sliders"></div>
     <button type="submit">Get Prediction</button>
   </form>
@@ -16,52 +14,48 @@
   <h2 id="result"></h2>
 
   <script>
-    const featureInfo = [
-      { name: "Radius_Mean", min: 6.98, max: 28.11 },
-      { name: "Texture_Mean", min: 9.71, max: 39.28 },
-      { name: "Perimeter_Mean", min: 43.79, max: 188.5 },
-      { name: "Area_Mean", min: 143.5, max: 2501 },
-      { name: "Smoothness_Mean", min: 0.05263, max: 0.2226 },
-      { name: "Compactness_Mean", min: 0.01938, max: 0.3454 },
-      { name: "Concavity_Mean", min: 0.0, max: 0.4268 },
-      { name: "ConcavePoints_Mean", min: 0.0, max: 0.2012 },
-      { name: "Symmetry_Mean", min: 0.106, max: 0.304 },
-      { name: "FractalDimension_Mean", min: 0.04996, max: 0.09744 }
-    ];
+    const features = {
+      "Radius_Mean": [6.98, 28.11],
+      "Texture_Mean": [9.71, 39.28],
+      "Perimeter_Mean": [43.79, 188.5],
+      "Area_Mean": [143.5, 2501],
+      "Smoothness_Mean": [0.05263, 0.2226],
+      "Compactness_Mean": [0.01938, 0.3454],
+      "Concavity_Mean": [0, 0.4268],
+      "ConcavePoints_Mean": [0, 0.2012],
+      "Symmetry_Mean": [0.106, 0.304],
+      "FractalDimension_Mean": [0.04996, 0.09744]
+    };
 
-    const slidersContainer = document.getElementById('sliders');
-    featureInfo.forEach(({ name, min, max }) => {
-      slidersContainer.innerHTML += `
-        <label for="${name}">${name} (${min} - ${max})</label><br>
-        <input type="range" id="${name}" name="${name}" min="${min}" max="${max}" step="0.01" value="${(min + max) / 2}" />
-        <span id="${name}Value">${(min + max) / 2}</span><br><br>
+    const slidersDiv = document.getElementById("sliders");
+    const values = {};
+
+    for (const [key, [min, max]] of Object.entries(features)) {
+      slidersDiv.innerHTML += `
+        <label>${key} (${min} - ${max})</label><br>
+        <input type="range" id="${key}" name="${key}" min="${min}" max="${max}" step="0.0001" value="${(min + max) / 2}" oninput="document.getElementById('${key}-val').innerText = this.value">
+        <span id="${key}-val">${(min + max) / 2}</span><br><br>
       `;
-    });
+    }
 
-    featureInfo.forEach(({ name }) => {
-      document.getElementById(name).addEventListener('input', (e) => {
-        document.getElementById(`${name}Value`).innerText = e.target.value;
-      });
-    });
-
-    document.getElementById('predictForm').addEventListener('submit', async function (e) {
+    document.getElementById("cancer-form").addEventListener("submit", async function (e) {
       e.preventDefault();
-      const data = {};
-      featureInfo.forEach(({ name }) => {
-        data[name] = parseFloat(document.getElementById(name).value);
-      });
+
+      for (const key of Object.keys(features)) {
+        values[key] = parseFloat(document.getElementById(key).value);
+      }
 
       try {
-        const response = await fetch('https://cancer-detection-api.azurewebsites.net/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+        const response = await fetch("https://cancer-detection-api.azurewebsites.net/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
         });
 
         const result = await response.json();
-        document.getElementById('result').innerText = result.Prediction || JSON.stringify(result);
+        document.getElementById("result").innerText = `Prediction: ${result.Prediction}`;
       } catch (error) {
-        document.getElementById('result').innerText = 'Error: ' + error;
+        document.getElementById("result").innerText = "Error: " + error;
       }
     });
   </script>
